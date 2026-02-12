@@ -3,11 +3,15 @@ package main
 import (
 	"fmt"
 	"os"
-	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
-	lipGloss "github.com/charmbracelet/lipgloss"
+	lipgloss "github.com/charmbracelet/lipgloss"
 )
+
+type ChatMessage struct {
+	User string
+	Text string
+}
 
 type model struct {
 	displayHeight int
@@ -15,7 +19,7 @@ type model struct {
 	agents        map[string]string
 	paneHeight    int
 	paneWidth     int
-	chatHistory   map[string]string
+	chatHistory   []ChatMessage
 	currentMsg    string
 }
 
@@ -48,24 +52,29 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			{
 				// send msg to agents and get the response
 				apiCall(m.currentMsg)
-				m.chatHistory = append(m.chatHistory, m.currentMsg)
+				m.chatHistory = append(m.chatHistory, ChatMessage{User: "user", Text: m.currentMsg})
 				m.currentMsg = ""
 			}
+		}
+
+	case tea.WindowSizeMsg:
+		{
+			m.displayHeight = msg.Height - 2
+			m.displayWidth = msg.Width - 2
+			m.paneHeight = m.displayHeight
+			m.paneWidth = m.displayWidth / len(m.agents)
 		}
 	}
 	return m, nil
 }
 
 func (m model) View() string {
-	var s strings.Builder
-	for key := range m.agents {
-		s.WriteString(key + " ")
-	}
-	for _, chat := range m.chatHistory {
-		s.WriteString(chat)
-	}
-	s.WriteString(">" + m.currentMsg)
-	return s.String()
+	style := lipgloss.NewStyle().
+		Height(m.displayHeight).
+		Width(m.displayWidth).
+		Border(lipgloss.NormalBorder()).
+		BorderForeground(lipgloss.Color("#FFFFFF"))
+	return style.Render()
 }
 
 func main() {
