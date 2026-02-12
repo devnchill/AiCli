@@ -3,8 +3,10 @@ package main
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
+	lipGloss "github.com/charmbracelet/lipgloss"
 )
 
 type model struct {
@@ -13,21 +15,24 @@ type model struct {
 	agents        map[string]string
 	paneHeight    int
 	paneWidth     int
-	chatHistory   []string
+	chatHistory   map[string]string
 	currentMsg    string
 }
 
 func initialModel() model {
 	return model{
-		currentMsg:  "",
-		chatHistory: []string{""},
+		currentMsg: "",
+		agents: map[string]string{
+			"chatGPT": "OPEN_AI_APIKEY",
+			"claude":  "CLAUDE_PIKEY",
+		},
 	}
 }
 
 func (m model) Init() tea.Cmd { return nil }
 
 func apiCall(s string) {
-	panic("unimplemented")
+	fmt.Println("Not implemented yet")
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -52,13 +57,21 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) View() string {
-	return "Hello"
+	var s strings.Builder
+	for key := range m.agents {
+		s.WriteString(key + " ")
+	}
+	for _, chat := range m.chatHistory {
+		s.WriteString(chat)
+	}
+	s.WriteString(">" + m.currentMsg)
+	return s.String()
 }
 
 func main() {
 	p := tea.NewProgram(initialModel())
 	if _, err := p.Run(); err != nil {
-		fmt.Println("error :%v", err)
+		fmt.Printf("error :%v", err)
 		os.Exit(1)
 	}
 }
