@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 	lipgloss "github.com/charmbracelet/lipgloss"
@@ -13,14 +14,21 @@ type ChatMessage struct {
 	Text string
 }
 
+type NameToApiKey map[string]string
+
+type ChatHistory map[string][]string
+
 type model struct {
-	displayHeight int
-	displayWidth  int
-	agents        map[string]string
-	paneHeight    int
-	paneWidth     int
-	chatHistory   []ChatMessage
-	currentMsg    string
+	displayHeight  int
+	displayWidth   int
+	paneHeight     int
+	paneWidth      int
+	inputBarHeight int
+	inputBarWidth  int
+	inputBarPrompt string
+	agents         NameToApiKey
+	chatHistory    ChatHistory
+	currentMsg     string
 }
 
 func initialModel() model {
@@ -30,6 +38,11 @@ func initialModel() model {
 			"chatGPT": "OPEN_AI_APIKEY",
 			"claude":  "CLAUDE_PIKEY",
 		},
+		chatHistory: map[string][]string{
+			"chatGPT": {"hi , my name is GPT", "This is my second message", "Oh i like to keep talking", "alr i'll stop"},
+			"claude":  {"hi , my name is CLAUDE", "I don't like to talk much", "Talk isn't cheap hence i cost you money", "I'm better than GPT slop."},
+		},
+		inputBarPrompt: "Prompt> ",
 	}
 }
 
@@ -52,16 +65,18 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			{
 				// send msg to agents and get the response
 				apiCall(m.currentMsg)
-				m.chatHistory = append(m.chatHistory, ChatMessage{User: "user", Text: m.currentMsg})
+				m.chatHistory["user"] = append(m.chatHistory["user"], m.currentMsg)
 				m.currentMsg = ""
 			}
 		}
 
 	case tea.WindowSizeMsg:
 		{
-			m.displayHeight = msg.Height - 2
+			m.displayHeight = msg.Height - 5
 			m.displayWidth = msg.Width - 2
-			m.paneHeight = m.displayHeight - 6
+			m.inputBarHeight = 2
+			m.inputBarWidth = m.displayWidth - 2
+			m.paneHeight = m.displayHeight - m.inputBarHeight
 			m.paneWidth = (m.displayWidth / len(m.agents)) - 2
 		}
 	}
@@ -75,13 +90,15 @@ func (m model) View() string {
 		Border(lipgloss.NormalBorder()).
 		BorderForeground(lipgloss.Color("#FFFFFF"))
 	var agentViews []string
-	for agentNames, _ := range m.agents {
-		agentContent := fmt.Sprintf("Agent: %s", agentNames)
+	for agentNames := range m.agents {
+		agentContent := fmt.Sprintf("Agent: %s\n>  %s", agentNames, strings.Join(m.chatHistory[agentNames], "\n>  "))
 		agentPane := lipgloss.NewStyle().Height(m.paneHeight).Width(m.paneWidth).Border(lipgloss.NormalBorder()).BorderForeground(lipgloss.Color("#FFFFFF")).Padding(1, 1).Render(agentContent)
 		agentViews = append(agentViews, agentPane)
 	}
 	horizontalRow := lipgloss.JoinHorizontal(lipgloss.Top, agentViews...)
-	return parentContainer.Render(horizontalRow)
+	inputBar := lipgloss.NewStyle().Width(m.inputBarWidth).Border(lipgloss.NormalBorder()).BorderForeground(lipgloss.Color("#FFFFFF")).Render(m.inputBarPrompt)
+	insideView := lipgloss.JoinVertical(lipgloss.Left, horizontalRow, inputBar)
+	return parentContainer.Render(insideView)
 }
 
 func main() {
