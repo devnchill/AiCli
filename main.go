@@ -61,20 +61,27 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		{
 			m.displayHeight = msg.Height - 2
 			m.displayWidth = msg.Width - 2
-			m.paneHeight = m.displayHeight
-			m.paneWidth = m.displayWidth / len(m.agents)
+			m.paneHeight = m.displayHeight - 6
+			m.paneWidth = (m.displayWidth / len(m.agents)) - 2
 		}
 	}
 	return m, nil
 }
 
 func (m model) View() string {
-	style := lipgloss.NewStyle().
+	parentContainer := lipgloss.NewStyle().
 		Height(m.displayHeight).
 		Width(m.displayWidth).
 		Border(lipgloss.NormalBorder()).
 		BorderForeground(lipgloss.Color("#FFFFFF"))
-	return style.Render()
+	var agentViews []string
+	for agentNames, _ := range m.agents {
+		agentContent := fmt.Sprintf("Agent: %s", agentNames)
+		agentPane := lipgloss.NewStyle().Height(m.paneHeight).Width(m.paneWidth).Border(lipgloss.NormalBorder()).BorderForeground(lipgloss.Color("#FFFFFF")).Padding(1, 1).Render(agentContent)
+		agentViews = append(agentViews, agentPane)
+	}
+	horizontalRow := lipgloss.JoinHorizontal(lipgloss.Top, agentViews...)
+	return parentContainer.Render(horizontalRow)
 }
 
 func main() {
