@@ -12,8 +12,21 @@ import (
 )
 
 type NameToApiKey map[string]string
-type ChatHistory map[string][]string
+type ChatHistory map[string][]Message
 type AgentNameToViewPort map[string]*viewport.Model
+
+type MessageRole int
+
+const (
+	RoleUSER MessageRole = iota
+	RoleLLM
+	RoleSYSTEM
+)
+
+type Message struct {
+	Role    MessageRole
+	Content string
+}
 
 type model struct {
 	tuiHeight           int
@@ -27,6 +40,26 @@ type model struct {
 	inputTextArea       textarea.Model
 	chatHistory         ChatHistory
 	agentsNameInOrder   []string
+}
+
+func renderHistory(history []Message) string {
+	var b strings.Builder
+
+	for _, msg := range history {
+		switch msg.Role {
+		case RoleUSER:
+			b.WriteString("You: ")
+		case RoleLLM:
+			b.WriteString("LLM: ")
+		case RoleSYSTEM:
+			b.WriteString("System: ")
+		}
+
+		b.WriteString(msg.Content)
+		b.WriteString("\n")
+	}
+
+	return b.String()
 }
 
 func initialModel() model {
@@ -44,9 +77,9 @@ func initialModel() model {
 			"chatGPT": "OPEN_AI_APIKEY",
 			"claude":  "CLAUDE_PIKEY",
 		},
-		chatHistory: map[string][]string{
-			"chatGPT": {"hi , my name is GPT", "This is my second message"},
-			"claude":  {"hi , my name is CLAUDE", "I don't like to talk much"},
+		chatHistory: map[string][]Message{
+			"chatGPT": {{Role: RoleLLM, Content: "hi , my name is GPT"}},
+			"claude":  {{Role: RoleLLM, Content: "hi , my name is CLAUDE"}, {Role: RoleLLM, Content: "I don't like to talk much"}},
 		},
 		inputTextAreaHeight: 3,
 		inputTextAreaWidth:  60,
@@ -73,8 +106,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			text := strings.TrimSpace(m.inputTextArea.Value())
 			if text != "" {
 				for name, vp := range m.agentViewports {
-					m.chatHistory[name] = append(m.chatHistory[name], "You: "+text)
-					vp.SetContent(strings.Join(m.chatHistory[name], "\n"))
+					m.chatHistory[name] = append(m.chatHistory[name], Message{Role: RoleUSER, Content: text})
+					vp.SetContent(renderHistory(m.chatHistory[name]))
 				}
 				m.inputTextArea.Reset()
 			}
@@ -97,6 +130,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			vp := m.agentViewports[agentName]
 			vp.Width = m.agentViewportWidth - 2
 			vp.Height = m.agentViewportHeight - 2
+			vp.SetContent(renderHistory(m.chatHistory[agentName]))
 		}
 	}
 
