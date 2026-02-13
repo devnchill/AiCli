@@ -26,6 +26,7 @@ type model struct {
 	inputTextAreaWidth  int
 	inputTextArea       textarea.Model
 	chatHistory         ChatHistory
+	agentsNameInOrder   []string
 }
 
 func initialModel() model {
@@ -35,6 +36,8 @@ func initialModel() model {
 	ta.Focus()
 	ta.SetHeight(3)
 	ta.SetWidth(60)
+
+	agentsNameInOrder := []string{"chatGPT", "claude"}
 
 	return model{
 		agents: map[string]string{
@@ -49,6 +52,7 @@ func initialModel() model {
 		inputTextAreaWidth:  60,
 		inputTextArea:       ta,
 		agentViewports:      make(map[string]*viewport.Model),
+		agentsNameInOrder:   agentsNameInOrder,
 	}
 }
 
@@ -68,7 +72,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "enter":
 			text := strings.TrimSpace(m.inputTextArea.Value())
 			if text != "" {
-				m.chatHistory["user"] = append(m.chatHistory["user"], text)
+				for name, vp := range m.agentViewports {
+					m.chatHistory[name] = append(m.chatHistory[name], "You: "+text)
+					vp.SetContent(strings.Join(m.chatHistory[name], "\n"))
+				}
 				m.inputTextArea.Reset()
 			}
 		}
@@ -99,9 +106,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m model) View() string {
 	var panes []string
 
-	for agentName, vp := range m.agentViewports {
-		agentChatHistory := strings.Join(m.chatHistory[agentName], "\n> ")
-		vp.SetContent(agentChatHistory)
+	for _, name := range m.agentsNameInOrder {
+		vp, ok := m.agentViewports[name]
+		if !ok || vp == nil {
+			continue
+		}
 		styled := gloss.NewStyle().
 			Border(gloss.NormalBorder()).
 			BorderForeground(gloss.Color("#FFFFFF")).
