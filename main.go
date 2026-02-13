@@ -76,17 +76,20 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.tuiHeight = msg.Height
 		m.tuiWidth = msg.Width
 
-		m.agentViewportHeight = m.tuiHeight - m.inputTextAreaHeight
-		m.agentViewportWidth = m.tuiWidth / len(m.agents)
+		usableHeight := m.tuiHeight - 2
+		usableWidth := m.tuiWidth - 2
+
+		m.agentViewportHeight = usableHeight - m.inputTextAreaHeight
+		m.agentViewportWidth = usableWidth / len(m.agents)
 
 		for agentName := range m.agents {
 			if _, exists := m.agentViewports[agentName]; !exists {
-				vp := viewport.New(m.agentViewportWidth, m.agentViewportHeight)
+				vp := viewport.New(m.agentViewportWidth-2, m.agentViewportHeight-2)
 				m.agentViewports[agentName] = &vp
 			}
 			vp := m.agentViewports[agentName]
-			vp.Height = m.agentViewportHeight
-			vp.Width = m.agentViewportWidth
+			vp.Width = m.agentViewportWidth - 2
+			vp.Height = m.agentViewportHeight - 2
 		}
 	}
 
@@ -114,8 +117,8 @@ func (m model) View() string {
 	)
 
 	parentContainer := gloss.NewStyle().
-		Height(m.tuiHeight).
-		Width(m.tuiWidth).
+		Height(m.tuiHeight - 2).
+		Width(m.tuiWidth - 2).
 		Border(gloss.NormalBorder()).
 		BorderForeground(gloss.Color("#FFFFFF"))
 
