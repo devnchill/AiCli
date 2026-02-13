@@ -7,7 +7,7 @@ import (
 
 	"github.com/charmbracelet/bubbles/textarea"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	gloss "github.com/charmbracelet/lipgloss"
 )
 
 type NameToApiKey map[string]string
@@ -26,8 +26,8 @@ type model struct {
 func initialModel() model {
 	ta := textarea.New()
 	ta.Placeholder = "Prompt> "
-	ta.FocusedStyle.Placeholder = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#FFFFFF"))
+	ta.FocusedStyle.Placeholder = gloss.NewStyle().
+		Foreground(gloss.Color("#FFFFFF"))
 	ta.SetWidth(60)
 	ta.SetHeight(3)
 	ta.Focus()
@@ -87,30 +87,30 @@ func (m model) View() string {
 		historyText := strings.Join(m.chatHistory[agentName], "\n> ")
 		content := fmt.Sprintf("Agent: %s\n> %s", agentName, historyText)
 
-		agentPane := lipgloss.NewStyle().
+		agentPane := gloss.NewStyle().
 			Height(m.paneHeight).
 			Width(m.paneWidth).
-			Border(lipgloss.NormalBorder()).
-			BorderForeground(lipgloss.Color("#FFFFFF")).
+			Border(gloss.NormalBorder()).
+			BorderForeground(gloss.Color("#FFFFFF")).
 			Padding(1, 1).
 			Render(content)
 
 		agentViews = append(agentViews, agentPane)
 	}
 
-	horizontalRow := lipgloss.JoinHorizontal(lipgloss.Top, agentViews...)
+	horizontalRow := gloss.JoinHorizontal(gloss.Top, agentViews...)
 
-	insideView := lipgloss.JoinVertical(
-		lipgloss.Left,
+	insideView := gloss.JoinVertical(
+		gloss.Left,
 		horizontalRow,
 		m.input.View(),
 	)
 
-	parentContainer := lipgloss.NewStyle().
+	parentContainer := gloss.NewStyle().
 		Height(m.displayHeight).
 		Width(m.displayWidth).
-		Border(lipgloss.NormalBorder()).
-		BorderForeground(lipgloss.Color("#FFFFFF"))
+		Border(gloss.NormalBorder()).
+		BorderForeground(gloss.Color("#FFFFFF"))
 
 	return parentContainer.Render(insideView)
 }
