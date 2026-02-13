@@ -1,4 +1,5 @@
-build 
+.env
 .direnv
-AiCli
+build 
 aicli
+AiCli

@@ -1,17 +1,21 @@
 package tui
 
-import "strings"
+import (
+	"strings"
 
-func renderHistory(history []Message) string {
+	"github.com/devnchill/AiCli/internal/types"
+)
+
+func renderHistory(history []types.Message) string {
 	var b strings.Builder
 
 	for _, msg := range history {
 		switch msg.Role {
-		case RoleUSER:
+		case types.RoleUSER:
 			b.WriteString("You: ")
-		case RoleLLM:
+		case types.RoleLLM:
 			b.WriteString("LLM: ")
-		case RoleSYSTEM:
+		case types.RoleSYSTEM:
 			b.WriteString("System: ")
 		}
 

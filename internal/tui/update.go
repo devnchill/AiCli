@@ -5,6 +5,7 @@ import (
 
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/devnchill/AiCli/internal/types"
 )
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -19,9 +20,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "enter":
 			text := strings.TrimSpace(m.inputTextArea.Value())
 			if text != "" {
-				for name, vp := range m.agentViewports {
-					m.chatHistory[name] = append(m.chatHistory[name], Message{Role: RoleUSER, Content: text})
-					vp.SetContent(renderHistory(m.chatHistory[name]))
+				for _, agentStruct := range m.agents {
+					agentStruct.ChatHistory = append(agentStruct.ChatHistory, types.Message{Role: types.RoleUSER, Content: text})
+					agentStruct.Vp.SetContent(renderHistory(agentStruct.ChatHistory))
 				}
 				m.inputTextArea.Reset()
 			}
@@ -36,15 +37,15 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.agentViewportHeight = usableHeight - m.inputTextAreaHeight
 		m.agentViewportWidth = usableWidth / len(m.agents)
 
-		for agentName := range m.agents {
-			if _, exists := m.agentViewports[agentName]; !exists {
+		for _, agentStruct := range m.agents {
+			if agentStruct.Vp == nil {
 				vp := viewport.New(m.agentViewportWidth-2, m.agentViewportHeight-2)
-				m.agentViewports[agentName] = &vp
+				agentStruct.Vp = &vp
 			}
-			vp := m.agentViewports[agentName]
+			vp := agentStruct.Vp
 			vp.Width = m.agentViewportWidth - 2
 			vp.Height = m.agentViewportHeight - 2
-			vp.SetContent(renderHistory(m.chatHistory[agentName]))
+			vp.SetContent(renderHistory(agentStruct.ChatHistory))
 		}
 	}
 

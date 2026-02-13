@@ -8,14 +8,13 @@ func (m model) View() string {
 	var panes []string
 
 	for _, name := range m.agentsNameInOrder {
-		vp, ok := m.agentViewports[name]
-		if !ok || vp == nil {
+		if m.agents[name].Vp == nil {
 			continue
 		}
 		styled := gloss.NewStyle().
 			Border(gloss.NormalBorder()).
 			BorderForeground(gloss.Color("#FFFFFF")).
-			Render(vp.View())
+			Render(m.agents[name].Vp.View())
 		panes = append(panes, styled)
 	}
 
