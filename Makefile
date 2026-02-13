@@ -1,2 +1,20 @@
-AiCli:main.go
-	go build 
+BINARY := aicli
+
+MAIN := ./cmd/aicli
+
+GOFLAGS ?= 
+
+all: build
+
+build:
+	go build $(GOFLAGS) -o $(BINARY) $(MAIN)
+
+run: build
+	./$(BINARY)
+
+clean:
+	rm -f $(BINARY)
+
+install:
+	go install $(GOFLAGS) $(MAIN)
+
