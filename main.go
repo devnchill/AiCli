@@ -13,7 +13,7 @@ import (
 
 type NameToApiKey map[string]string
 type ChatHistory map[string][]string
-type AgentNameToViewPort map[string]viewport.Model
+type AgentNameToViewPort map[string]*viewport.Model
 
 type model struct {
 	tuiHeight           int
@@ -22,11 +22,20 @@ type model struct {
 	agentViewportHeight int
 	agentViewportWidth  int
 	agentViewports      AgentNameToViewPort
+	inputTextAreaHeight int
+	inputTextAreaWidth  int
 	inputTextArea       textarea.Model
 	chatHistory         ChatHistory
 }
 
 func initialModel() model {
+	ta := textarea.New()
+	ta.Placeholder = "Enter your prompt..."
+	ta.Prompt = "| "
+	ta.Focus()
+	ta.SetHeight(3)
+	ta.SetWidth(60)
+
 	return model{
 		agents: map[string]string{
 			"chatGPT": "OPEN_AI_APIKEY",
@@ -36,11 +45,15 @@ func initialModel() model {
 			"chatGPT": {"hi , my name is GPT", "This is my second message"},
 			"claude":  {"hi , my name is CLAUDE", "I don't like to talk much"},
 		},
+		inputTextAreaHeight: 3,
+		inputTextAreaWidth:  60,
+		inputTextArea:       ta,
+		agentViewports:      make(map[string]*viewport.Model),
 	}
 }
 
 func (m model) Init() tea.Cmd {
-	return nil
+	return textarea.Blink
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -56,40 +69,44 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			text := strings.TrimSpace(m.inputTextArea.Value())
 			if text != "" {
 				m.chatHistory["user"] = append(m.chatHistory["user"], text)
-				// apiCall(text)
 				m.inputTextArea.Reset()
 			}
 		}
 	case tea.WindowSizeMsg:
-		m.tuiHeight = msg.Height - 4
-		m.tuiWidth = msg.Width - 2
-		m.agentViewportHeight = m.tuiHeight - m.inputTextArea.Height()
-		m.agentViewportWidth = (m.tuiWidth / len(m.agents)) - 2
-		m.inputTextArea.SetWidth(m.tuiWidth - 4)
+		m.tuiHeight = msg.Height
+		m.tuiWidth = msg.Width
+
+		m.agentViewportHeight = m.tuiHeight - m.inputTextAreaHeight
+		m.agentViewportWidth = m.tuiWidth / len(m.agents)
+
+		for agentName := range m.agents {
+			if _, exists := m.agentViewports[agentName]; !exists {
+				vp := viewport.New(m.agentViewportWidth, m.agentViewportHeight)
+				m.agentViewports[agentName] = &vp
+			}
+			vp := m.agentViewports[agentName]
+			vp.Height = m.agentViewportHeight
+			vp.Width = m.agentViewportWidth
+		}
 	}
 
 	return m, cmd
 }
 
 func (m model) View() string {
-	var agentViews []string
-	for agentName := range m.agents {
-		historyText := strings.Join(m.chatHistory[agentName], "\n> ")
-		content := fmt.Sprintf("Agent: %s\n> %s", agentName, historyText)
+	var panes []string
 
-		agentPane := gloss.NewStyle().
-			Height(m.agentViewportHeight).
-			Width(m.agentViewportWidth).
+	for agentName, vp := range m.agentViewports {
+		agentChatHistory := strings.Join(m.chatHistory[agentName], "\n> ")
+		vp.SetContent(agentChatHistory)
+		styled := gloss.NewStyle().
 			Border(gloss.NormalBorder()).
 			BorderForeground(gloss.Color("#FFFFFF")).
-			Padding(1, 1).
-			Render(content)
-
-		agentViews = append(agentViews, agentPane)
+			Render(vp.View())
+		panes = append(panes, styled)
 	}
 
-	horizontalRow := gloss.JoinHorizontal(gloss.Top, agentViews...)
-
+	horizontalRow := gloss.JoinHorizontal(gloss.Top, panes...)
 	insideView := gloss.JoinVertical(
 		gloss.Left,
 		horizontalRow,
