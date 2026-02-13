@@ -6,32 +6,27 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/bubbles/textarea"
+	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	gloss "github.com/charmbracelet/lipgloss"
 )
 
 type NameToApiKey map[string]string
 type ChatHistory map[string][]string
+type AgentNameToViewPort map[string]viewport.Model
 
 type model struct {
-	displayHeight int
-	displayWidth  int
-	paneHeight    int
-	paneWidth     int
-	agents        NameToApiKey
-	chatHistory   ChatHistory
-	input         textarea.Model
+	tuiHeight           int
+	tuiWidth            int
+	agents              NameToApiKey
+	agentViewportHeight int
+	agentViewportWidth  int
+	agentViewports      AgentNameToViewPort
+	inputTextArea       textarea.Model
+	chatHistory         ChatHistory
 }
 
 func initialModel() model {
-	ta := textarea.New()
-	ta.Placeholder = "Prompt> "
-	ta.FocusedStyle.Placeholder = gloss.NewStyle().
-		Foreground(gloss.Color("#FFFFFF"))
-	ta.SetWidth(60)
-	ta.SetHeight(3)
-	ta.Focus()
-
 	return model{
 		agents: map[string]string{
 			"chatGPT": "OPEN_AI_APIKEY",
@@ -41,13 +36,8 @@ func initialModel() model {
 			"chatGPT": {"hi , my name is GPT", "This is my second message"},
 			"claude":  {"hi , my name is CLAUDE", "I don't like to talk much"},
 		},
-		input: ta,
 	}
 }
-
-// func apiCall(text string) {
-// 	fmt.Println("API CALL:", text)
-// }
 
 func (m model) Init() tea.Cmd {
 	return nil
@@ -55,7 +45,7 @@ func (m model) Init() tea.Cmd {
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
-	m.input, cmd = m.input.Update(msg)
+	m.inputTextArea, cmd = m.inputTextArea.Update(msg)
 
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
@@ -63,19 +53,19 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+c":
 			return m, tea.Quit
 		case "enter":
-			text := strings.TrimSpace(m.input.Value())
+			text := strings.TrimSpace(m.inputTextArea.Value())
 			if text != "" {
 				m.chatHistory["user"] = append(m.chatHistory["user"], text)
 				// apiCall(text)
-				m.input.Reset()
+				m.inputTextArea.Reset()
 			}
 		}
 	case tea.WindowSizeMsg:
-		m.displayHeight = msg.Height - 4
-		m.displayWidth = msg.Width - 2
-		m.paneHeight = m.displayHeight - m.input.Height()
-		m.paneWidth = (m.displayWidth / len(m.agents)) - 2
-		m.input.SetWidth(m.displayWidth - 4)
+		m.tuiHeight = msg.Height - 4
+		m.tuiWidth = msg.Width - 2
+		m.agentViewportHeight = m.tuiHeight - m.inputTextArea.Height()
+		m.agentViewportWidth = (m.tuiWidth / len(m.agents)) - 2
+		m.inputTextArea.SetWidth(m.tuiWidth - 4)
 	}
 
 	return m, cmd
@@ -88,8 +78,8 @@ func (m model) View() string {
 		content := fmt.Sprintf("Agent: %s\n> %s", agentName, historyText)
 
 		agentPane := gloss.NewStyle().
-			Height(m.paneHeight).
-			Width(m.paneWidth).
+			Height(m.agentViewportHeight).
+			Width(m.agentViewportWidth).
 			Border(gloss.NormalBorder()).
 			BorderForeground(gloss.Color("#FFFFFF")).
 			Padding(1, 1).
@@ -103,12 +93,12 @@ func (m model) View() string {
 	insideView := gloss.JoinVertical(
 		gloss.Left,
 		horizontalRow,
-		m.input.View(),
+		m.inputTextArea.View(),
 	)
 
 	parentContainer := gloss.NewStyle().
-		Height(m.displayHeight).
-		Width(m.displayWidth).
+		Height(m.tuiHeight).
+		Width(m.tuiWidth).
 		Border(gloss.NormalBorder()).
 		BorderForeground(gloss.Color("#FFFFFF"))
 
