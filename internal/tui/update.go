@@ -1,11 +1,15 @@
 package tui
 
 import (
+	"context"
+	"fmt"
+	"os"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/devnchill/AiCli/internal/types"
+	"github.com/charmbracelet/lipgloss"
+	"github.com/devnchill/AiCli/internal/agent"
 )
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -21,8 +25,19 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			text := strings.TrimSpace(m.inputTextArea.Value())
 			if text != "" {
 				for _, agentStruct := range m.agents {
-					agentStruct.ChatHistory = append(agentStruct.ChatHistory, types.Message{Role: types.RoleUSER, Content: text})
-					agentStruct.Vp.SetContent(renderHistory(agentStruct.ChatHistory))
+					agentStruct.UpdateHistory(agent.RoleUSER, text)
+					ctx := context.Background()
+					res, err := agentStruct.SendPrompt(ctx, text)
+					if err != nil {
+						fmt.Println(err)
+						os.Exit(0)
+					}
+					if len(res) > 0 {
+						agentStruct.UpdateHistory(agent.RoleLLM, res)
+						content := renderHistory(agentStruct.UIChatHistory)
+						wrapped := lipgloss.NewStyle().Width(agentStruct.ViewPort.Width).Height(agentStruct.ViewPort.Height).Render(content)
+						agentStruct.ViewPort.SetContent(wrapped)
+					}
 				}
 				m.inputTextArea.Reset()
 			}
@@ -38,14 +53,15 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.agentViewportWidth = usableWidth / len(m.agents)
 
 		for _, agentStruct := range m.agents {
-			if agentStruct.Vp == nil {
+			if agentStruct.ViewPort == nil {
 				vp := viewport.New(m.agentViewportWidth-2, m.agentViewportHeight-2)
-				agentStruct.Vp = &vp
+				agentStruct.ViewPort = &vp
 			}
-			vp := agentStruct.Vp
+			vp := agentStruct.ViewPort
 			vp.Width = m.agentViewportWidth - 2
 			vp.Height = m.agentViewportHeight - 2
-			vp.SetContent(renderHistory(agentStruct.ChatHistory))
+			m.inputTextArea.SetWidth(vp.Width)
+			vp.SetContent(renderHistory(agentStruct.UIChatHistory))
 		}
 	}
 

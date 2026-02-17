@@ -14,4 +14,5 @@ func main() {
 		fmt.Printf("error: %v", err)
 		os.Exit(1)
 	}
+	fmt.Println("Exiting Gracefully...")
 }

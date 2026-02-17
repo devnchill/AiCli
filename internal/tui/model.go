@@ -1,11 +1,14 @@
 package tui
 
 import (
+	"context"
+	"fmt"
+	"os"
+
 	"github.com/charmbracelet/bubbles/textarea"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/devnchill/AiCli/internal/agent"
-	"github.com/devnchill/AiCli/internal/types"
 )
 
 type model struct {
@@ -26,17 +29,24 @@ func InitialModel() model {
 	ta.Prompt = "| "
 	ta.Focus()
 	ta.SetHeight(3)
-	ta.SetWidth(60)
+	ta.SetWidth(150)
 
-	agentsNameInOrder := []string{"chatGPT", "claude"}
+	agentsNameInOrder := []string{"gemini", "claude"}
+	ctx := context.Background()
+	geminiProvider, err := agent.NewGeminiProvider(ctx, os.Getenv("GEMINI_API_KEY"))
+	if err != nil {
+		fmt.Print(err)
+		os.Exit(1)
+	}
+	claudeProvider := agent.NewClaudeProvider(ctx, os.Getenv("CLAUDE_API_KEY"))
 
 	return model{
 		agents: map[string]*agent.Agent{
-			"chatGPT": &agent.Agent{Name: "CHATGPT", API_KEY: "GPT_KEY", LOADING: false, ChatHistory: []types.Message{{Role: types.RoleLLM, Content: "hi,myself gpt"}}, Vp: &viewport.Model{}},
-			"claude":  &agent.Agent{Name: "CLAUDE", API_KEY: "CLAUDE_KEY", LOADING: false, ChatHistory: []types.Message{{Role: types.RoleLLM, Content: "hi,myself claude"}}, Vp: &viewport.Model{}},
+			"gemini": {Name: "GEMINI", Loading: false, UIChatHistory: []agent.Message{{Role: agent.RoleLLM, Text: "hi,myself gemini"}}, ViewPort: &viewport.Model{}, Provider: geminiProvider},
+			"claude": {Name: "CLAUDE", Loading: false, UIChatHistory: []agent.Message{{Role: agent.RoleLLM, Text: "hi,myself claude"}}, ViewPort: &viewport.Model{}, Provider: claudeProvider},
 		},
 		inputTextAreaHeight: 3,
-		inputTextAreaWidth:  60,
+		inputTextAreaWidth:  150,
 		inputTextArea:       ta,
 		agentsNameInOrder:   agentsNameInOrder,
 	}

@@ -2,20 +2,19 @@ BINARY := build/aicli
 
 MAIN := ./cmd/aicli
 
-GOFLAGS ?= 
+SRC := $(shell find . -type f -name '*.go')
 
-all: build
+all: $(BINARY)
 
-build:
-	mkdir build
-	go build $(GOFLAGS) -o $(BINARY) $(MAIN)
+$(BINARY): $(SRC)
+	mkdir -p build
+	go build -o $(BINARY) $(MAIN)
 
-run: build
+.PHONY: clean run
+
+run: $(BINARY)
 	./$(BINARY)
 
 clean:
-	rm -f $(BINARY)
-
-install:
-	go install $(GOFLAGS) $(MAIN)
+	rm -rf build
 
