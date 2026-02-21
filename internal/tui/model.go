@@ -1,16 +1,10 @@
 package tui
 
 import (
-	"context"
-	"fmt"
-	"log"
-	"os"
-
 	"github.com/charmbracelet/bubbles/textarea"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/devnchill/AiCli/internal/agent"
-	"github.com/joho/godotenv"
 )
 
 type model struct {
@@ -26,25 +20,14 @@ type model struct {
 }
 
 func InitialModel() model {
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file")
-	}
-	ta := textarea.New()
-	ta.Placeholder = "Enter your prompt..."
-	ta.Prompt = "| "
-	ta.Focus()
-	ta.SetHeight(3)
-	ta.SetWidth(150)
+	// exits if error
+	loadEnv()
+
+	// exits if error
+	ta := createTextArea()
 
 	agentsNameInOrder := []string{"gemini", "claude"}
-	ctx := context.Background()
-	geminiProvider, err := agent.NewGeminiProvider(ctx, os.Getenv("GEMINI_API_KEY"))
-	if err != nil {
-		fmt.Print(err)
-		os.Exit(1)
-	}
-	claudeProvider := agent.NewClaudeProvider(ctx, os.Getenv("CLAUDE_API_KEY"))
+	geminiProvider, claudeProvider := agent.CreateProviders()
 
 	return model{
 		agents: map[string]*agent.Agent{
