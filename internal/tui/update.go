@@ -9,7 +9,7 @@ import (
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/devnchill/AiCli/internal/agent"
+	"github.com/devnchill/AiCli/internal/providers"
 )
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -30,7 +30,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					text := strings.TrimSpace(m.chatState.inputTextArea.Value())
 					if text != "" {
 						for _, agentStruct := range m.chatState.agents {
-							agentStruct.UpdateHistory(agent.RoleUSER, text)
+							agentStruct.UpdateHistory(providers.RoleUSER, text)
 							ctx := context.Background()
 							res, err := agentStruct.SendPrompt(ctx, text)
 							if err != nil {
@@ -38,7 +38,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 								os.Exit(0)
 							}
 							if len(res) > 0 {
-								agentStruct.UpdateHistory(agent.RoleLLM, res)
+								agentStruct.UpdateHistory(providers.RoleLLM, res)
 								content := renderHistory(agentStruct.UIChatHistory)
 								wrapped := lipgloss.NewStyle().Width(agentStruct.ViewPort.Width).Height(agentStruct.ViewPort.Height).Render(content)
 								agentStruct.ViewPort.SetContent(wrapped)

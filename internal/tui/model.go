@@ -3,7 +3,6 @@ package tui
 import (
 	"github.com/charmbracelet/bubbles/textarea"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/devnchill/AiCli/internal/agent"
 )
 
 type Phase int
@@ -28,7 +27,7 @@ type greetingPhaseStruct struct {
 type chatPhaseStruct struct {
 	tuiHeight           int
 	tuiWidth            int
-	agents              map[string]*agent.Agent
+	agents              map[string]*Agent
 	agentsNameInOrder   []string
 	agentViewportHeight int
 	agentViewportWidth  int

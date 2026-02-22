@@ -5,20 +5,20 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/bubbles/textarea"
-	"github.com/devnchill/AiCli/internal/agent"
+	"github.com/devnchill/AiCli/internal/providers"
 	"github.com/joho/godotenv"
 )
 
-func renderHistory(history []agent.Message) string {
+func renderHistory(history []Message) string {
 	var b strings.Builder
 
 	for _, msg := range history {
 		switch msg.Role {
-		case agent.RoleUSER:
+		case providers.RoleUSER:
 			b.WriteString("You: ")
-		case agent.RoleLLM:
+		case providers.RoleLLM:
 			b.WriteString("LLM: ")
-		case agent.RoleSystem:
+		case providers.RoleSystem:
 			b.WriteString("System: ")
 		}
 
