@@ -5,16 +5,34 @@ import (
 )
 
 func (m model) View() string {
+	switch m.Phase {
+	case GreetingPhase:
+		{
+			return greetingPhase(m)
+		}
+	case ChatPhase:
+		{
+			return chatPhase(m)
+		}
+	}
+	return errorPhase(m)
+}
+
+func greetingPhase(m model) string {
+	return m.greetingState.greetingMessage
+}
+
+func chatPhase(m model) string {
 	var panes []string
 
-	for _, name := range m.agentsNameInOrder {
-		if m.agents[name].ViewPort == nil {
+	for _, name := range m.chatState.agentsNameInOrder {
+		if m.chatState.agents[name].ViewPort == nil {
 			continue
 		}
 		styled := gloss.NewStyle().
 			Border(gloss.NormalBorder()).
 			BorderForeground(gloss.Color("#FFFFFF")).
-			Render(m.agents[name].ViewPort.View())
+			Render(m.chatState.agents[name].ViewPort.View())
 		panes = append(panes, styled)
 	}
 
@@ -22,14 +40,16 @@ func (m model) View() string {
 	insideView := gloss.JoinVertical(
 		gloss.Left,
 		horizontalRow,
-		m.inputTextArea.View(),
+		m.chatState.inputTextArea.View(),
 	)
 
 	parentContainer := gloss.NewStyle().
-		Height(m.tuiHeight - 2).
-		Width(m.tuiWidth - 2).
+		Height(m.chatState.tuiHeight - 2).
+		Width(m.chatState.tuiWidth - 2).
 		Border(gloss.NormalBorder()).
 		BorderForeground(gloss.Color("#FFFFFF"))
 
 	return parentContainer.Render(insideView)
 }
+
+func errorPhase(m model) string { return "OOps an error occured" }

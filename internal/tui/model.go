@@ -2,12 +2,30 @@ package tui
 
 import (
 	"github.com/charmbracelet/bubbles/textarea"
-	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/devnchill/AiCli/internal/agent"
 )
 
-type model struct {
+type Phase int
+
+const (
+	GreetingPhase Phase = iota
+	ChatPhase
+)
+
+type option struct {
+	name       string
+	isSelected bool
+}
+
+type greetingPhaseStruct struct {
+	greetingMessage string
+	options         []option
+	cursor          int
+	selectedAgents  []option
+}
+
+type chatPhaseStruct struct {
 	tuiHeight           int
 	tuiWidth            int
 	agents              map[string]*agent.Agent
@@ -19,25 +37,23 @@ type model struct {
 	inputTextArea       textarea.Model
 }
 
+type model struct {
+	Phase         Phase
+	greetingState greetingPhaseStruct
+	chatState     chatPhaseStruct
+}
+
 func InitialModel() model {
-	// exits if error
 	loadEnv()
-
-	// exits if error
-	ta := createTextArea()
-
-	agentsNameInOrder := []string{"gemini", "claude"}
-	geminiProvider, claudeProvider := agent.CreateProviders()
+	greetingState := greetingPhaseStruct{
+		greetingMessage: "hello welcome to ai cli",
+	}
+	chatState := chatPhaseStruct{}
 
 	return model{
-		agents: map[string]*agent.Agent{
-			"gemini": {Name: "GEMINI", Loading: false, UIChatHistory: []agent.Message{{Role: agent.RoleLLM, Text: "hi,myself gemini"}}, ViewPort: &viewport.Model{}, Provider: geminiProvider},
-			"claude": {Name: "CLAUDE", Loading: false, UIChatHistory: []agent.Message{{Role: agent.RoleLLM, Text: "hi,myself claude"}}, ViewPort: &viewport.Model{}, Provider: claudeProvider},
-		},
-		inputTextAreaHeight: 3,
-		inputTextAreaWidth:  150,
-		inputTextArea:       ta,
-		agentsNameInOrder:   agentsNameInOrder,
+		Phase:         GreetingPhase,
+		greetingState: greetingState,
+		chatState:     chatState,
 	}
 }
 
